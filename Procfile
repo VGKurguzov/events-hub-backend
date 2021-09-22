@@ -1,0 +1,1 @@
+web: java -Dserver.port=$PORT_APP -jar target/event-hub-backend-0.0.1.jar
