@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.saxakiil</groupId>
-    <artifactId>event-hub-backend</artifactId>
+    <artifactId>events-hub-backend</artifactId>
     <version>0.0.1</version>
-    <name>event-hub-backend</name>
+    <name>events-hub-backend</name>
     <description>Server-side for Events hub</description>
     <properties>
         <java.version>1.8</java.version>
