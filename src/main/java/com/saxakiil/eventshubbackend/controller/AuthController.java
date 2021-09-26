@@ -13,6 +13,7 @@ import com.saxakiil.eventshubbackend.repository.UserRepository;
 import com.saxakiil.eventshubbackend.service.UserDetailsImpl;
 import com.saxakiil.eventshubbackend.util.RoleNormalizer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -36,18 +37,21 @@ public class AuthController {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+    private final String secret;
 
     @Autowired
     public AuthController(final AuthenticationManager authenticationManager,
                           final UserRepository userRepository,
                           final RoleRepository roleRepository,
                           final PasswordEncoder passwordEncoder,
-                          final JwtUtils jwtUtils) {
+                          final JwtUtils jwtUtils,
+                          final @Value("${app.adminSecret}") String secret) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
+        this.secret = secret;
     }
 
     @PostMapping("/signin")
@@ -87,20 +91,22 @@ public class AuthController {
                     .body(new MessageResponse("Error: Email is exist"));
         }
 
+        Set<String> reqRoles = signupRequest.getRoles();
+        Set<Role> roles = new HashSet<>();
+
+        if (reqRoles.stream().anyMatch(role -> role.contains("admin")) &&
+                !secret.equals(signupRequest.getAdminSecret())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Invalid secret"));
+        }
+
         User user = User.builder()
                 .username(signupRequest.getUsername())
                 .email(signupRequest.getEmail())
                 .password(passwordEncoder.encode(signupRequest.getPassword()))
                 .build();
 
-        Set<String> reqRoles = signupRequest.getRoles();
-        Set<Role> roles = new HashSet<>();
-
-        if (reqRoles == null) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Role is null"));
-        }
         reqRoles.forEach(requestRole -> Arrays.stream(EnumRole.values()).forEach(role -> {
             if (requestRole.contains(RoleNormalizer.normalize(role.name()))) {
                 Role checkedRole = roleRepository
