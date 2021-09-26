@@ -42,7 +42,7 @@ public class CardController {
     }
 
     @SneakyThrows
-    @PostMapping(value = "/delete")
+    @DeleteMapping(value = "/delete")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Long> deleteElement(@NonNull @RequestBody Long id) {
 
