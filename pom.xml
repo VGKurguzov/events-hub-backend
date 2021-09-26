@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.saxakiil</groupId>
     <artifactId>events-hub-backend</artifactId>
-    <version>0.0.1</version>
+    <version>0.1.0</version>
     <name>events-hub-backend</name>
     <description>Server-side for Events hub</description>
     <properties>
