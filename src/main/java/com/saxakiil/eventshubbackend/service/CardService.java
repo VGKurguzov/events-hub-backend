@@ -23,8 +23,19 @@ public class CardService {
         return cardRepository.findByPublished(isPublished, paging);
     }
 
+    public boolean deleteById(Long id) {
+        if (cardRepository.existsById(id)) {
+            cardRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
     public boolean addNewCard(Card card) {
+        if (cardRepository.existsById(card.getId())) {
+            return false;
+        }
         cardRepository.save(card);
-        return cardRepository.existsById(card.getId());
+        return true;
     }
 }
