@@ -29,7 +29,6 @@ public class PaginationController {
     }
 
     @GetMapping("/getPage")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> getPage(
             @RequestParam Integer pageNumber,
             @RequestParam Boolean published,

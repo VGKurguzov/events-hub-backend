@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static com.saxakiil.eventshubbackend.util.Utils.CARD_IS_ADDED;
@@ -28,6 +29,7 @@ public class CardController {
 
     @SneakyThrows
     @PostMapping(value = "/add")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Long> addElement(@NonNull @RequestBody Card card) {
 
         boolean isAdded = cardService.addNewCard(card);
@@ -41,6 +43,7 @@ public class CardController {
 
     @SneakyThrows
     @PostMapping(value = "/delete")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Long> deleteElement(@NonNull @RequestBody Long id) {
 
         boolean isDeleted = cardService.deleteById(id);
