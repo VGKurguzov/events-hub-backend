@@ -11,21 +11,20 @@ import com.saxakiil.eventshubbackend.model.User;
 import com.saxakiil.eventshubbackend.repository.RoleRepository;
 import com.saxakiil.eventshubbackend.repository.UserRepository;
 import com.saxakiil.eventshubbackend.service.UserDetailsImpl;
+import com.saxakiil.eventshubbackend.util.RoleNormalizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -63,16 +62,12 @@ public class AuthController {
         String jwt = jwtUtils.generateJwtToken(authentication);
 
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
 
         return ResponseEntity.ok(JwtResponse.builder()
                 .token(jwt)
                 .id(userDetails.getId())
                 .username(userDetails.getUsername())
                 .email(userDetails.getEmail())
-                .roles(roles)
                 .build());
     }
 
@@ -102,25 +97,18 @@ public class AuthController {
         Set<Role> roles = new HashSet<>();
 
         if (reqRoles == null) {
-            Role userRole = roleRepository
-                    .findByName(EnumRole.ROLE_USER)
-                    .orElseThrow(() -> new RuntimeException("Error, Role USER is not found"));
-            roles.add(userRole);
-        } else {
-            reqRoles.forEach(r -> {
-                if ("admin".equals(r)) {
-                    Role adminRole = roleRepository
-                            .findByName(EnumRole.ROLE_ADMIN)
-                            .orElseThrow(() -> new RuntimeException("Error, Role ADMIN is not found"));
-                    roles.add(adminRole);
-                } else {
-                    Role modRole = roleRepository
-                            .findByName(EnumRole.ROLE_USER)
-                            .orElseThrow(() -> new RuntimeException("Error, Role USER is not found"));
-                    roles.add(modRole);
-                }
-            });
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Role is null"));
         }
+        reqRoles.forEach(requestRole -> Arrays.stream(EnumRole.values()).forEach(role -> {
+            if (requestRole.contains(RoleNormalizer.normalize(role.name()))) {
+                Role checkedRole = roleRepository
+                        .findByName(role)
+                        .orElseThrow(() -> new RuntimeException("Error, Role is not found"));
+                roles.add(checkedRole);
+            }
+        }));
         user.setRoles(roles);
         userRepository.save(user);
         return ResponseEntity.ok(new MessageResponse("User CREATED"));
