@@ -1,5 +1,6 @@
 package com.saxakiil.eventshubbackend.service;
 
+import com.saxakiil.eventshubbackend.exception.UserNotFoundException;
 import com.saxakiil.eventshubbackend.model.Card;
 import com.saxakiil.eventshubbackend.repository.CardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class CardService {
@@ -37,5 +40,9 @@ public class CardService {
         }
         cardRepository.save(card);
         return true;
+    }
+
+    public Optional<Card> getById(Long id) {
+        return cardRepository.findById(id);
     }
 }

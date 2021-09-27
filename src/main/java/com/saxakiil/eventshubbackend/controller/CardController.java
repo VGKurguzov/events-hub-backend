@@ -1,5 +1,6 @@
 package com.saxakiil.eventshubbackend.controller;
 
+import com.saxakiil.eventshubbackend.exception.UserNotFoundException;
 import com.saxakiil.eventshubbackend.model.Card;
 import com.saxakiil.eventshubbackend.service.CardService;
 import lombok.SneakyThrows;
@@ -55,4 +56,15 @@ public class CardController {
         }
 
     }
+
+    @SneakyThrows
+    @GetMapping(value = "/get")
+    public ResponseEntity<Card> getElement(@NonNull @RequestParam Long id) {
+        if (cardService.getById(id).isPresent()) {
+            return new ResponseEntity<>(cardService.getById(id).get(),HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+    }
+
 }
