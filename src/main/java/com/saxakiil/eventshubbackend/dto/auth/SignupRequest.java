@@ -1,9 +1,7 @@
-package com.saxakiil.eventshubbackend.auth;
+package com.saxakiil.eventshubbackend.dto.auth;
 
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Set;
 
 @Getter
 @Setter
@@ -11,7 +9,6 @@ public class SignupRequest {
 
     private String username;
     private String email;
-    private Set<String> roles;
     private String password;
-    private String adminSecret;
+    private ProfileRequest profileRequest;
 }

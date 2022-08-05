@@ -3,17 +3,15 @@ package com.saxakiil.eventshubbackend.controller;
 import com.saxakiil.eventshubbackend.auth.JwtResponse;
 import com.saxakiil.eventshubbackend.auth.LoginRequest;
 import com.saxakiil.eventshubbackend.auth.MessageResponse;
-import com.saxakiil.eventshubbackend.auth.SignupRequest;
 import com.saxakiil.eventshubbackend.config.jwt.JwtUtils;
-import com.saxakiil.eventshubbackend.model.EnumRole;
+import com.saxakiil.eventshubbackend.dto.auth.SignupRequest;
+import com.saxakiil.eventshubbackend.model.AccountProfile;
 import com.saxakiil.eventshubbackend.model.Role;
 import com.saxakiil.eventshubbackend.model.User;
 import com.saxakiil.eventshubbackend.repository.RoleRepository;
 import com.saxakiil.eventshubbackend.repository.UserRepository;
 import com.saxakiil.eventshubbackend.service.UserDetailsImpl;
-import com.saxakiil.eventshubbackend.util.RoleNormalizer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,9 +21,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Optional;
+
+import static com.saxakiil.eventshubbackend.model.EnumRole.ROLE_ORGANIZE;
+import static com.saxakiil.eventshubbackend.model.EnumRole.ROLE_USER;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -37,29 +36,33 @@ public class AuthController {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    private final String secret;
 
     @Autowired
     public AuthController(final AuthenticationManager authenticationManager,
                           final UserRepository userRepository,
                           final RoleRepository roleRepository,
                           final PasswordEncoder passwordEncoder,
-                          final JwtUtils jwtUtils,
-                          final @Value("${app.adminSecret}") String secret) {
+                          final JwtUtils jwtUtils) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
-        this.secret = secret;
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<?> authUser(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+
+        if (!userRepository.existsByEmail(loginRequest.getEmail()))
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Username is not found"));
+
+        User username = userRepository
+                .findByEmail(loginRequest.getEmail()).get();
 
         Authentication authentication = authenticationManager
-                .authenticate(new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
+                .authenticate(new UsernamePasswordAuthenticationToken(username.getUsername(),
                         loginRequest.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -67,56 +70,102 @@ public class AuthController {
 
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
+        Role role = userRepository.findById(userDetails.getId()).get().getRole();
+
         return ResponseEntity.ok(JwtResponse.builder()
                 .token(jwt)
                 .id(userDetails.getId())
                 .username(userDetails.getUsername())
+                .role(role)
                 .email(userDetails.getEmail())
                 .build());
     }
 
-    @PostMapping(value = "/signup", consumes = MediaType.APPLICATION_JSON_VALUE,
+    @PostMapping(value = "/signupUser", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> registerUser(@RequestBody SignupRequest signupRequest) {
+    public ResponseEntity<?> registerUser(@RequestBody SignupRequest signupUserRequest) {
 
-        if (userRepository.existsByUsername(signupRequest.getUsername())) {
+        if (userRepository.existsByUsername(signupUserRequest.getUsername())) {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: Username is exist"));
         }
 
-        if (userRepository.existsByEmail(signupRequest.getEmail())) {
+        if (userRepository.existsByEmail(signupUserRequest.getEmail())) {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: Email is exist"));
         }
 
-        Set<String> reqRoles = signupRequest.getRoles();
-        Set<Role> roles = new HashSet<>();
-
-        if (reqRoles.stream().anyMatch(role -> role.contains("admin")) &&
-                !secret.equals(signupRequest.getAdminSecret())) {
+        if (userRepository.existsByAccountProfile_PhoneNumber(signupUserRequest.getProfileRequest().getPhoneNumber())) {
             return ResponseEntity
                     .badRequest()
-                    .body(new MessageResponse("Error: Invalid secret"));
+                    .body(new MessageResponse("Error: Phone number is exist"));
         }
 
+
+
         User user = User.builder()
-                .username(signupRequest.getUsername())
-                .email(signupRequest.getEmail())
-                .password(passwordEncoder.encode(signupRequest.getPassword()))
+                .username(signupUserRequest.getUsername())
+                .email(signupUserRequest.getEmail())
+                .password(passwordEncoder.encode(signupUserRequest.getPassword()))
+                .role(userRole.get())
+                .accountProfile(AccountProfile.builder()
+                        .phoneNumber(signupUserRequest.getProfileRequest().getPhoneNumber())
+                        .firstName(signupUserRequest.getProfileRequest().getFirstName())
+                        .lastName(signupUserRequest.getProfileRequest().getLastName())
+                        .birthday(signupUserRequest.getProfileRequest().getBirthday())
+                        .build())
                 .build();
 
-        reqRoles.forEach(requestRole -> Arrays.stream(EnumRole.values()).forEach(role -> {
-            if (requestRole.contains(RoleNormalizer.normalize(role.name()))) {
-                Role checkedRole = roleRepository
-                        .findByName(role)
-                        .orElseThrow(() -> new RuntimeException("Error, Role is not found"));
-                roles.add(checkedRole);
-            }
-        }));
-        user.setRoles(roles);
         userRepository.save(user);
-        return ResponseEntity.ok(new MessageResponse("User CREATED"));
+        return ResponseEntity
+                .ok(new MessageResponse("User CREATED"));
+    }
+
+    @PostMapping(value = "/signupOrganize", consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> registerOrganize(@RequestBody SignupRequest signupOrganizeRequest) {
+
+        if (userRepository.existsByUsername(signupOrganizeRequest.getUsername())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Organize name is exist"));
+        }
+
+        if (userRepository.existsByEmail(signupOrganizeRequest.getEmail())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Email is exist"));
+        }
+
+        if (userRepository.existsByAccountProfile_PhoneNumber(signupOrganizeRequest.getProfileRequest()
+                .getPhoneNumber())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Phone number is exist"));
+        }
+
+        Optional<Role> userRole = roleRepository.findByName(ROLE_ORGANIZE);
+        if (userRole.isEmpty())
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Unknown role"));
+
+        User organize = User.builder()
+                .username(signupOrganizeRequest.getUsername())
+                .email(signupOrganizeRequest.getEmail())
+                .password(passwordEncoder.encode(signupOrganizeRequest.getPassword()))
+                .role(userRole.get())
+                .accountProfile(AccountProfile.builder()
+                        .phoneNumber(signupOrganizeRequest.getProfileRequest().getPhoneNumber())
+                        .address(signupOrganizeRequest.getProfileRequest().getAddress())
+                        .urlOnSite(signupOrganizeRequest.getProfileRequest().getUrlOnSite())
+                        .build())
+                .build();
+
+        userRepository.save(organize);
+        return ResponseEntity
+                .ok(new MessageResponse("Organize CREATED"));
     }
 }

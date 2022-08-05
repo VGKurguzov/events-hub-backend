@@ -1,5 +1,6 @@
 package com.saxakiil.eventshubbackend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -11,6 +12,7 @@ public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @JsonIgnore
     private long id;
 
     @Enumerated(EnumType.STRING)

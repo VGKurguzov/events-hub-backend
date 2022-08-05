@@ -1,5 +1,6 @@
 package com.saxakiil.eventshubbackend.auth;
 
+import com.saxakiil.eventshubbackend.model.Role;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,5 +13,6 @@ public class JwtResponse {
     final private String type = "Bearer";
     private String username;
     private String email;
+    private Role role;
 
 }
