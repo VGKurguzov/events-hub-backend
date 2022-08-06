@@ -4,6 +4,7 @@ import com.saxakiil.eventshubbackend.config.jwt.AuthEntryPointJwt;
 import com.saxakiil.eventshubbackend.config.jwt.AuthTokenFilter;
 import com.saxakiil.eventshubbackend.config.jwt.JwtUtils;
 import com.saxakiil.eventshubbackend.service.UserDetailsServiceImpl;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,20 +22,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthEntryPointJwt unauthorizedHandler;
     private final JwtUtils jwtUtils;
-
-    @Autowired
-    public WebSecurityConfig(final UserDetailsServiceImpl userDetailsService,
-                             final AuthEntryPointJwt unauthorizedHandler,
-                             final JwtUtils jwtUtils) {
-        this.userDetailsService = userDetailsService;
-        this.unauthorizedHandler = unauthorizedHandler;
-        this.jwtUtils = jwtUtils;
-    }
 
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {

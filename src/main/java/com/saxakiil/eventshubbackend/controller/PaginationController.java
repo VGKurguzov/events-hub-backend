@@ -2,6 +2,7 @@ package com.saxakiil.eventshubbackend.controller;
 
 import com.saxakiil.eventshubbackend.model.Card;
 import com.saxakiil.eventshubbackend.service.CardService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,14 +19,10 @@ import static com.saxakiil.eventshubbackend.util.Utils.PAGE_SIZE;
 @RestController
 @RequestMapping("/api/pagination")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PaginationController {
 
     private final CardService cardService;
-
-    @Autowired
-    public PaginationController(final CardService cardService) {
-        this.cardService = cardService;
-    }
 
     @GetMapping("/getPage")
     public ResponseEntity<Map<String, Object>> getPage(

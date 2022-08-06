@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Builder
@@ -43,13 +44,13 @@ public class User {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "account_profile_id")
     private AccountProfile accountProfile;
-
-    @OneToMany(targetEntity = Card.class,
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_organize_id", referencedColumnName = "id")
-    private Set<Card> organizeCard = new HashSet<>();
+//
+//    @OneToMany(targetEntity = Card.class,
+//            cascade = CascadeType.ALL,
+//            orphanRemoval = true,
+//            fetch = FetchType.EAGER)
+//    @JoinColumn(name = "user_organize_id", referencedColumnName = "id")
+//    private Set<Card> organizeCard = new LinkedHashSet<>();
 
     @JsonManagedReference
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
@@ -57,5 +58,5 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "card_id")
     )
-    private final Set<Card> favoriteCards = new HashSet<>();
+    private final Set<Card> favoriteCards = new LinkedHashSet<>();
 }
